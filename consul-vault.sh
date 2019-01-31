@@ -276,7 +276,7 @@ kubectl apply -f consul/consul-service-nonheadless.yaml
 kubectl apply -f consul/consul-statefulset.yaml
 
 read -r -d '' USAGE <<- EOF
-CONSUL - Install done.
+CONSUL - Consul installed.
 CONSUL - Access to Consul store:
 \tK8s forward port:
 \t\tkubectl port-forward consul-1 8500:8500
@@ -417,7 +417,7 @@ spec:
         args:
           - "agent"
           - "-retry-join=consul-0.consul.\$(NAMESPACE).svc.cluster.local"
-          - "-encrypt=$(GOSSIP_ENCRYPTION_KEY)"
+          - "-encrypt=\$(GOSSIP_ENCRYPTION_KEY)"
           - "-domain=cluster.local"
           - "-datacenter=dc1"
           - "-disable-host-node-id"
@@ -468,12 +468,23 @@ x=3; echo $VAULT_INIT | jq -r '.keys[]' | while read i; do f $i ; x=$(($x-1)); i
 
 VAULT_TOKEN=$(echo $VAULT_INIT | jq -r '.root_token')
 
-curl -ks -H "X-Vault-Token: $VAULT_TOKEN" -H "Content-Type: application/json" --request POST --cacert certs/ca.pem --cert certs/vault.pem --key certs/vault-key.pem https://$VAULT_IP:8200/v1/secret/data/hello -d '{ "data": { "foo": "world" } }'
-curl -ks -H "X-Vault-Token: $VAULT_TOKEN" --request GET --cacert certs/ca.pem --cert certs/vault.pem --key certs/vault-key.pem https://$VAULT_IP:8200/v1/secret/data/hello
+read -r -d '' USAGE <<- EOF
+CONSUL - Vault installed.
+\tVault keys:
+\t\tEnv. var: VAULT_INIT
+\tVault Token:
+\t\tEnv. var: VAULT_TOKEN
+\tVault hostname:
+\t\tEnv. var: VAULT_IP
+EOF
+printf "$USAGE"
 
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" -H "Content-Type: application/json" --request POST https://$VAULT_IP:8200/v1/secret/data/hello -d '{ "data": { "foo": "world" } }'
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" --request GET https://$VAULT_IP:8200/v1/secret/data/hello
 
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" -H "Content-Type: application/json" --request POST https://$VAULT_IP:8200/v1/secret/samplevaultconfig/data/hello -d '{ "data": { "foo": "world!" } }'
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" --request GET https://$VAULT_IP:8200/v1/secret/samplevaultconfig/data/hello
 
-
-
-
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" -H "Content-Type: application/json" --request POST https://$VAULT_IP:8200/v1/secret/samplevaultconfig -d '{"data": "feel welcome"}'
+curl -ks -H "X-Vault-Token: $VAULT_TOKEN" --request GET https://$VAULT_IP:8200/v1/secret/samplevaultconfig
 
